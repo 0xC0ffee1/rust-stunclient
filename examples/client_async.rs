@@ -1,4 +1,5 @@
 use stunclient::StunClient;
+use std::sync::Arc;
 
 #[cfg(not(feature="async"))]
 fn main() { println!("Cargo feature not enabled for this example"); }
@@ -24,7 +25,7 @@ async fn main() -> Result<(), ()> {
 
     let u = tokio::net::UdpSocket::bind(&"0.0.0.0:0".parse::<std::net::SocketAddr>().unwrap()).await.unwrap();
 
-    let ret = sc.query_external_address_async(&u);
+    let ret = sc.query_external_address_async(Arc::new(&u));
 
     match ret.await {
         Ok(x) => println!("{}", x),

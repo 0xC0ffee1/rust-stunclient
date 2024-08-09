@@ -3,6 +3,7 @@
 
 use stun_codec::{MessageDecoder, MessageEncoder};
 
+use std::sync::Arc;
 use bytecodec::{DecodeExt, EncodeExt};
 use std::fmt;
 use std::net::{SocketAddr, UdpSocket};
@@ -223,8 +224,9 @@ impl StunClient {
     #[cfg(feature = "async")]
     async fn query_external_address_async_impl(
         self,
-        udp: &tokio::net::UdpSocket,
+        udp: Arc<&tokio::net::UdpSocket>,
     ) -> Result<SocketAddr, Error> {
+
         let mut interval = tokio::time::interval(self.retry_interval);
         interval.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Delay);
 
@@ -256,7 +258,7 @@ impl StunClient {
     #[cfg(feature = "async")]
     pub async fn query_external_address_async(
         self,
-        udp: &tokio::net::UdpSocket,
+        udp: Arc<&tokio::net::UdpSocket>,
     ) -> Result<SocketAddr, Error> {
         let timeout = self.timeout;
         let ret = tokio::time::timeout(timeout, self.query_external_address_async_impl(udp)).await;
@@ -292,12 +294,12 @@ mod tests {
     #[cfg(feature = "async")]
     #[tokio::test(flavor = "current_thread")]
     async fn it_works_async() {
-        use std::net::SocketAddr;
+        use std::{net::SocketAddr, sync::Arc};
         let local_addr: SocketAddr = "0.0.0.0:0".parse().unwrap();
         let udp = tokio::net::UdpSocket::bind(&local_addr).await.unwrap();
 
         let s = super::StunClient::with_google_stun_server();
-        let f = s.query_external_address_async(&udp);
+        let f = s.query_external_address_async(Arc::new(&udp));
         let q = f.await;
         assert!(q.is_ok());
         println!("{}", q.unwrap())
